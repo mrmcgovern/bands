@@ -1,0 +1,219 @@
+<?php
+
+/**
+ * @file
+ * Provides integration with the Spotify Metadata API.
+ */
+
+/**
+ * Form for testing the API.
+ */
+function artist_search_form($form, &$form_state) {
+  /*$form['type'] = array(
+    '#type' => 'select',
+    '#title' => t('Type'),
+    '#description' => t('The type of data to search for.'),
+    '#options' => array(
+      'artist' => t('Artist'),
+      'album' => t('Album'),
+      'track' => t('Track'),
+    ),
+    '#required' => TRUE,
+  );*/
+
+  $form['query'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Query'),
+    '#description' => t('Search string.'),
+    '#required' => TRUE,
+  );
+  
+  $form['search'] = array(
+    '#type' => 'submit',
+    '#value' => t('Search'),
+    '#submit' => array('artist_search_form_submit'),
+    '#ajax' => array(
+      'callback' => 'spotify_api_test_ajax',
+      'wrapper' => 'spotify-results-wrapper',
+      'method' => 'replace',
+    ),
+  );
+
+  if (isset($form_state['res'])) {
+    $results = $form_state['res'];
+  }
+  else {
+    $results = t('Construct your query with the help of the form above.');
+  }
+
+  $form['results'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Results'),
+    '#prefix' => '<div id="spotify-results-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  $form['results']['data'] = array(
+//    '#prefix' => '<pre>',
+//    '#suffix' => '</pre>',
+    '#markup' => $results,
+  );
+
+  return $form;
+}
+
+/**
+ * Spotify API test AJAX callback.
+ */
+function artist_search_form_ajax($form, $form_state) {
+  return $form['results'];
+}
+
+/**
+ * Spotify API test submit callback.
+ */
+$count = 0;
+function artist_search_form_submit($form, &$form_state) {
+  global $user;
+
+  $form_state['values']['query'] = strToLower($form_state['values']['query']);
+  $form_state['values']['query'] = preg_replace("/[^a-z0-9_\s-]/", "", $form_state['values']['query']);
+  $form_state['values']['query'] = preg_replace("/[\s-]+/", " ", $form_state['values']['query']);
+  $form_state['values']['query'] = preg_replace("/[\s_]/", "-", $form_state['values']['query']);
+  module_load_include('inc', 'spotify', 'spotify.api');
+  $function = 'spotify_search_artist';
+  if (function_exists($function)) {
+    $results = $function($form_state['values']['query']);
+  }
+  $artists = json_decode(json_encode((array)simplexml_load_string($results->data)),1);
+  $artists = $artists['artist']; 
+  if(array_key_exists('0', $artists)){
+	$artist = $artists;
+  }else{
+	$artist = json_decode(json_encode((array)simplexml_load_string($results->data)),1);
+  }
+  $artists_results = "<table>";
+  $artists_results .= "<tr><td>Artist</td><td>Popularity</td><td>I Like Them</td><td>I've Seen Them</td><td>I've Met Them</td></tr>";
+  foreach($artist as $result){
+  	$artist_name = $result['name'];
+	$artist_pop = $result['popularity'];
+	$artist_spotify = $result['@attributes']['href'];
+	
+	$user_like = "";
+	$user_seen = "";
+	$user_met = "";
+
+	if($user->uid && in_array('fan', $user->roles)){
+		$account = user_load($GLOBALS['user']->uid);
+		// Extract the field items
+		$user_like_value = field_get_items('user', $account, 'field_bands_liked');
+		if($user_like_value){
+			foreach($user_like_value as $row){
+				$user_like = $row['safe_value'];
+				if ($user_like == $artist_spotify) {
+					$user_like = "Liked!";
+				}else{
+					$user_like = "Add to Likes";
+				}
+			}
+		}else{
+			$user_like = "Add to Likes";
+		}
+		$user_seen_value = field_get_items('user', $account, 'field_bands_seen');
+		if($user_seen_value){
+			foreach($user_seen_value as $row){
+				$user_seen = $row['safe_value'];
+				if ($user_seen == $artist_spotify) {		
+					$user_seen = "Seen!";
+				}else{
+					$user_seen = "Add to Seen";
+				}
+			}
+		}else{
+			$user_seen = "Add to Seen";
+		}
+		$user_met_value = field_get_items('user', $account, 'field_bands_met');
+		if($user_met_value){
+			foreach($user_met_value as $row){
+				$user_met = $row['safe_value'];
+				if ($user_met == $artist_spotify) {		
+					$user_met = "Met!";
+				}else{
+					$user_met = "Add to Met";
+				}
+			}
+		}else{
+			$user_met = "Add to Met";
+		}
+	}
+	//$artist_spotify = $result['@attributes']['href'];
+	$artists_results .= "<tr><td>$artist_name</td><td>$artist_pop</td><td>$user_like</td><td>$user_seen</td><td>$user_met</td></tr>";
+  }
+  $artists_results .= "</table>";
+  $form_state['res'] = $artists_results;
+  unset($form_state['input']['results']);
+  $form_state['rebuild'] = TRUE;
+  $count ++;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function artist_search_menu() {
+  $items = array();
+  /*
+  $items['admin/config/media/spotify'] = array(
+    'title' => 'Spotify',
+    'description' => 'Configure Spotify Metadata API settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spotify_settings'),
+    'access arguments' => array('administer spotify'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+   $items['admin/config/media/spotify/settings'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 1,
+  );
+*/
+  $items['artist/search'] = array(
+    'title' => 'Search Spotify',
+    'description' => 'Search for your favorite artists in Spotify\'s library',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('artist_search_form'),
+    'access arguments' => array('use artist search'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+  );
+  
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function artist_search_permission() {
+  return array(
+    'use artist search' => array(
+      'title' => t('Use Artist Search'),
+      'description' => t('Perform searches using the Artist Search module.'),
+    ),
+  );
+}
+
+/**
+ * Settings form.
+ */
+/*function artist_search_settings($form, &$form_state) {
+  $form['spotify_territories'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Countries'),
+    '#description' => t('Optionaly restrict results from Spotify lookups to these countries. Enter a comma seperated list of county codes in the <a href="@link">ISO 3166-1 alpha-2</a> format.', array(
+      '@link' => 'http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2',
+    )),
+    '#default_value' => variable_get('spotify_territories', ''),
+  );
+
+  return system_settings_form($form);
+}*/

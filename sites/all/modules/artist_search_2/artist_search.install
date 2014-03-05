@@ -1,0 +1,79 @@
+<?php
+// artist_search.install
+function artist_search_install() {
+	switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+	
+		//artist name field (define!!!)
+		db_query("CREATE TABLE {artist_search_artist} (
+			vid int unsigned NOT NULL default '0',
+			field_name varchar(255) NOT NULL default '',
+			delta int unsigned NOT NULL default '0',
+			field_nid int unsigned NOT NULL default '0',
+			PRIMARY KEY  (vid,field_name,delta)
+		) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+		
+		//artist like field (define!!!)
+		db_query("CREATE TABLE {artist_search_like} (
+			vid int unsigned NOT NULL default '0',
+			field_name varchar(255) NOT NULL default '',
+			delta int unsigned NOT NULL default '0',
+			field_nid int unsigned NOT NULL default '0',
+			PRIMARY KEY  (vid,field_name,delta)
+		) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+	
+		//artist seen field (define!!!)
+		db_query("CREATE TABLE {artist_search_seen} (
+			vid int unsigned NOT NULL default '0',
+			field_name varchar(255) NOT NULL default '',
+			delta int unsigned NOT NULL default '0',
+			field_nid int unsigned NOT NULL default '0',
+			PRIMARY KEY  (vid,field_name,delta)
+		) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+	
+		//artist met field (define!!!)
+		db_query("CREATE TABLE {artist_search_artist} (
+			vid int unsigned NOT NULL default '0',
+			field_name varchar(255) NOT NULL default '',
+			delta int unsigned NOT NULL default '0',
+			field_nid int unsigned NOT NULL default '0',
+			PRIMARY KEY  (vid,field_name,delta)
+		) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+		
+		break;
+	}
+}
+
+function artist_search_uninstall() {
+	db_query('DROP TABLE {artist_search_artist}');
+	db_query('DROP TABLE {artist_search_like}');
+	db_query('DROP TABLE {artist_search_seen}');
+	db_query('DROP TABLE {artist_search_met}');
+	cache_clear_all('*', 'cache', TRUE);
+	cache_clear_all('*', 'cache_filter', TRUE);
+	cache_clear_all('*', 'cache_menu', TRUE);
+	cache_clear_all('*', 'cache_page', TRUE);
+}
+
+
+function myodule_schema() {
+  $schema['mymodule_table'] = array(
+    'description' => t('First table'),
+    'fields' => array(
+      'id' => array(
+        'description' => t('My unique identifier'),
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'list' => array(
+        'description' => t('list'),
+        'type' => 'varchar',
+        'not null' => true,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+  return $schema;     
+}
