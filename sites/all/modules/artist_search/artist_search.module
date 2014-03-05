@@ -113,7 +113,7 @@ function artist_search_form_submit($form, &$form_state) {
 				if ($user_like == $artist_spotify) {
 					$user_like = "Liked!";
 				}else{
-					$user_like = "Add to Likes";
+					$user_like = "<a href='/artist/" . $artist_spotify . "/like'>Add to Likes</a>";
 				}
 			}
 		}else{
@@ -187,7 +187,60 @@ function artist_search_menu() {
     'weight' => 2,
   );
   
+  //CALLBACK TO ARTIST LIKE FUNCTION WILL PASS ARTIST ID AND USER ID AND WRITE TO DATABASE
+  $items['artist/%/like'] = array(
+    'title' => 'Artist Like',
+    'description' => 'Mark artist as liked',
+    'page callback' => 'artist_search_like',
+    'page arguments' => array('artist_search_form'),
+    'access arguments' => array('use artist search'),
+    'type' => MENU_CALLBACK,
+    'weight' => 2,
+  );
+  
+  //CALLBACK TO ARTIST SEEN FUNCTION WILL PASS ARTIST ID AND USER ID AND WRITE TO DATABASE
+  $items['artist/%/seen'] = array(
+    'title' => 'Artist Seen',
+    'description' => 'Mark artist as seen',
+    'page callback' => 'artist_search_seen',
+    'page arguments' => array('artist_search_form'),
+    'access arguments' => array('use artist search'),
+    'type' => MENU_CALLBACK,
+    'weight' => 2,
+  );
+  
+  //CALLBACK TO ARTIST MET FUNCTION WILL PASS ARTIST ID AND USER ID AND WRITE TO DATABASE
+  $items['artist/%/met'] = array(
+    'title' => 'Artist Met',
+    'description' => 'Mark artist as met',
+    'page callback' => 'artist_search_met',
+    'page arguments' => array('artist_search_form'),
+    'access arguments' => array('use artist search'),
+    'type' => MENU_CALLBACK,
+    'weight' => 2,
+  );
+  
   return $items;
+}
+
+function artist_search_create_artist(){
+
+}
+
+function artist_search_artist_exists(){
+
+}
+
+function artist_search_artist_seen(){
+
+}
+
+function artist_search_artist_like(){
+
+}
+
+function artist_search_artist_met(){
+
 }
 
 /**
